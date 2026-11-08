@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KEC Sports Athletic Performance &amp; Scholarship Evaluator</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Additional dashboard layout enhancements */
+        .app-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 260px;
+            background: #1a237e;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.15);
+        }
+        .sidebar-brand {
+            padding: 24px 20px;
+            background: #101652;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .brand-badge {
+            width: 44px;
+            height: 44px;
+            background: #ffd700;
+            color: #1a237e;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 800;
+        }
+        .brand-text h2 {
+            font-size: 1.1rem;
+            color: #ffffff;
+            line-height: 1.2;
+        }
+        .brand-text p {
+            font-size: 0.72rem;
+            color: #9fa8da;
+        }
+        .sidebar-menu {
+            list-style: none;
+            padding: 15px 0;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+        .sidebar-menu li a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 22px;
+            color: #c5cae9;
+            font-size: 0.92rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+            border-left: 4px solid transparent;
+        }
+        .sidebar-menu li a:hover,
+        .sidebar-menu li a.active {
+            background: rgba(255,255,255,0.08);
+            color: #ffffff;
+            border-left-color: #ffd700;
+        }
+        .sidebar-menu li a .menu-icon {
+            font-size: 1.1rem;
+            width: 22px;
+            text-align: center;
+        }
+        .main-wrapper {
+            margin-left: 260px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f4f6f9;
+            min-width: 0;
+        }
+        .top-navbar {
+            height: 64px;
+            background: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            position: sticky;
+            top: 0;
+            z-index: 90;
+        }
+        .nav-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #1a237e;
+        }
+        .user-pill {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .user-badge {
+            background: #e8eaf6;
+            color: #1a237e;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .btn-logout {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+        .btn-logout:hover {
+            background: #ef5350;
+            color: #fff;
+        }
+        .content-area {
+            padding: 30px;
+            flex-grow: 1;
+        }
+        .section-view {
+            display: none;
+        }
+        .section-view.active {
+            display: block;
+            animation: fadeIn 0.25s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+        .stat-card {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-left: 5px solid #1a237e;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card.card-gold { border-left-color: #ffd700; }
+        .stat-card.card-silver { border-left-color: #9e9e9e; }
+        .stat-card.card-bronze { border-left-color: #cd7f32; }
+        .stat-card.card-green { border-left-color: #4caf50; }
+        .stat-card.card-red { border-left-color: #ef5350; }
+
+        .stat-label {
+            font-size: 0.82rem;
+            color: #757575;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .stat-value {
+            font-size: 1.85rem;
+            font-weight: 700;
+            color: #1a237e;
+            margin-top: 6px;
+        }
+        .stat-icon {
+            position: absolute;
+            right: 15px;
+            top: 20px;
+            font-size: 2rem;
+            opacity: 0.18;
+        }
+
+        /* Forms & Cards */
+        .content-card {
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            padding: 25px 30px;
+            margin-bottom: 25px;
+        }
+        .card-header-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1a237e;
+            border-bottom: 2px solid #e8eaf6;
+            padding-bottom: 12px;
+            margin-bottom: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .form-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .form-control-group {
+            margin-bottom: 16px;
+        }
+        .form-control-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #37474f;
+            margin-bottom: 6px;
+        }
+        .form-control-group input,
+        .form-control-group select,
+        .form-control-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cfd8dc;
+            border-radius: 6px;
+            font-size: 0.92rem;
+            transition: 0.2s;
+        }
+        .form-control-group input:focus,
+        .form-control-group select:focus,
+        .form-control-group textarea:focus {
+            outline: none;
+            border-color: #1a237e;
+            box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.12);
+        }
+        .btn-primary {
+            background: #1a237e;
+            color: #ffffff;
+            padding: 11px 22px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-primary:hover {
+            background: #283593;
+        }
+        .btn-success {
+            background: #2e7d32;
+            color: #ffffff;
+            padding: 11px 22px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-success:hover {
+            background: #388e3c;
+        }
+        .btn-secondary {
+            background: #546e7a;
+            color: #ffffff;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .btn-secondary:hover {
+            background: #455a64;
+        }
+
+        /* Tables */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        .data-table th {
+            background: #f1f3f8;
+            color: #283593;
+            font-weight: 700;
+            text-align: left;
+            padding: 12px 14px;
+            border-bottom: 2px solid #cfd8dc;
+        }
+        .data-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #e0e0e0;
+            color: #37474f;
+        }
+        .data-table tr:hover {
+            background: #f8f9fc;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-gold { background: #fff8e1; color: #f57f17; border: 1px solid #ffe082; }
+        .badge-silver { background: #eceff1; color: #455a64; border: 1px solid #cfd8dc; }
+        .badge-bronze { background: #efebe9; color: #5d4037; border: 1px solid #d7ccc8; }
+        .badge-none { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+        .badge-eligible { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .badge-ineligible { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+
+        /* Console Output Box */
+        .console-box {
+            background: #1e1e24;
+            color: #a5d6a7;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.88rem;
+            padding: 16px;
+            border-radius: 8px;
+            max-height: 280px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-top: 15px;
+            border: 1px solid #333;
+        }
+
+        /* Visual Bar Charts */
+        .chart-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .chart-box {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .bar-container {
+            margin: 12px 0;
+        }
+        .bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 4px;
+        }
+        .bar-track {
+            height: 14px;
+            background: #eee;
+            border-radius: 7px;
+            overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%;
+            border-radius: 7px;
+            transition: width 0.6s ease;
+        }
+        .bar-gold { background: linear-gradient(90deg, #ffd700, #ffb300); }
+        .bar-silver { background: linear-gradient(90deg, #b0bec5, #78909c); }
+        .bar-bronze { background: linear-gradient(90deg, #bcaaa4, #8d6e63); }
+        .bar-none { background: linear-gradient(90deg, #ef5350, #c62828); }
+        .bar-cat1 { background: linear-gradient(90deg, #1e88e5, #1565c0); }
+        .bar-cat2 { background: linear-gradient(90deg, #43a047, #2e7d32); }
+        .bar-cat3 { background: linear-gradient(90deg, #fb8c00, #e65100); }
+
+        /* Toast */
+        #toast {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: #1a237e;
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 6px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+            display: none;
+            z-index: 999;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-badge">K</div>
+                <div class="brand-text">
+                    <h2>KEC SPORTS</h2>
+                    <p>Performance &amp; Scholarship</p>
+                </div>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a onclick="showSection('dashboardView')" class="active" id="nav-dashboard"><span class="menu-icon">📊</span> Dashboard Overview</a></li>
+                <li><a onclick="showSection('registerView')" id="nav-register"><span class="menu-icon">📝</span> Phase 1: Register Athlete</a></li>
+                <li><a onclick="showSection('fitnessView')" id="nav-fitness"><span class="menu-icon">💪</span> Phase 1: Fitness Scores</a></li>
+                <li><a onclick="showSection('tournamentView')" id="nav-tournament"><span class="menu-icon">🏅</span> Phase 2: Tournaments</a></li>
+                <li><a onclick="showSection('trialsView')" id="nav-trials"><span class="menu-icon">⏱️</span> Phase 3: Trial Timings</a></li>
+                <li><a onclick="showSection('csvView')" id="nav-csv"><span class="menu-icon">📂</span> CSV Timing Logs</a></li>
+                <li><a onclick="showSection('evaluateView')" id="nav-evaluate"><span class="menu-icon">⚡</span> Multithreaded Evaluator</a></li>
+                <li><a onclick="showSection('scholarshipView')" id="nav-scholarship"><span class="menu-icon">🎓</span> Scholarship Award List</a></li>
+                <li><a onclick="showSection('reportsView')" id="nav-reports"><span class="menu-icon">📄</span> Award Letters (.txt)</a></li>
+                <li><a onclick="showSection('searchView')" id="nav-search"><span class="menu-icon">🔍</span> Search Athlete Profile</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Wrapper -->
+        <div class="main-wrapper">
+            <!-- Top Navbar -->
+            <header class="top-navbar">
+                <div class="nav-title">KEC Student Sports Athletic Performance &amp; Scholarship Evaluator</div>
+                <div class="user-pill">
+                    <span class="user-badge" id="userDisplayName">Dr. S. Ramesh Kumar (ADMIN)</span>
+                    <button class="btn-logout" onclick="logout()">Logout</button>
+                </div>
+            </header>
+
+            <!-- Main Content Container -->
+            <main class="content-area">
+
+                <!-- 1. DASHBOARD OVERVIEW VIEW -->
+                <div id="dashboardView" class="section-view active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Total Athletes</div>
+                            <div class="stat-value" id="statTotalAthletes">0</div>
+                            <div class="stat-icon">🏃</div>
+                        </div>
+                        <div class="stat-card card-green">
+                            <div class="stat-label">Eligible (SGPA ≥ 6.0)</div>
+                            <div class="stat-value" id="statEligible">0</div>
+                            <div class="stat-icon">✅</div>
+                        </div>
+                        <div class="stat-card card-red">
+                            <div class="stat-label">Ineligible (SGPA &lt; 6.0)</div>
+                            <div class="stat-value" id="statIneligible">0</div>
+                            <div class="stat-icon">❌</div>
+                        </div>
+                        <div class="stat-card card-gold">
+                            <div class="stat-label">Gold Awards (100%)</div>
+                            <div class="stat-value" id="statGold">0</div>
+                            <div class="stat-icon">🥇</div>
+                        </div>
+                        <div class="stat-card card-silver">
+                            <div class="stat-label">Silver Awards (50%)</div>
+                            <div class="stat-value" id="statSilver">0</div>
+                            <div class="stat-icon">🥈</div>
+                        </div>
+                        <div class="stat-card card-bronze">
+                            <div class="stat-label">Bronze Awards (25%)</div>
+                            <div class="stat-value" id="statBronze">0</div>
+                            <div class="stat-icon">🥉</div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row -->
+                    <div class="chart-row">
+                        <div class="chart-box">
+                            <h3 style="color:#1a237e; margin-bottom:15px; font-size:1.05rem;">🏆 Scholarship Distribution</h3>
+                            <div class="bar-container">
+                                <div class="bar-label"><span>Gold (90-100% SPI)</span><span id="chartGoldLabel">0</span></div>
+                                <div class="bar-track"><div id="chartGoldBar" class="bar-fill bar-gold" style="width: 0%;"></div></div>
+                            </div>
+                            <div class="bar-container">
+                                <div class="bar-label"><span>Silver (75-89.99% SPI)</span><span id="chartSilverLabel">0</span></div>
+                                <div class="bar-track"><div id="chartSilverBar" class="bar-fill bar-silver" style="width: 0%;"></div></div>
+                            </div>
+                            <div class="bar-container">
+                                <div class="bar-label"><span>Bronze (60-74.99% SPI)</span><span id="chartBronzeLabel">0</span></div>
+                                <div class="bar-track"><div id="chartBronzeBar" class="bar-fill bar-bronze" style="width: 0%;"></div></div>
+                            </div>
+                            <div class="bar-container">
+                                <div class="bar-label"><span>No Award / Ineligible</span><span id="chartNoneLabel">0</span></div>
+                                <div class="bar-track"><div id="chartNoneBar" class="bar-fill bar-none" style="width: 0%;"></div></div>
+                            </div>
+                        </div>
+
+                        <div class="chart-box">
+                            <h3 style="color:#1a237e; margin-bottom:15px; font-size:1.05rem;">🎯 Sports Category Enrollment</h3>
+                            <div class="bar-container">
+                                <div class="bar-label"><span>Individual Sports</span><span id="chartCat1Label">0</span></div>
+                                <div class="bar-track"><div id="chartCat1Bar" class="bar-fill bar-cat1" style="width: 0%;"></div></div>
+                            </div>
+                            <div class="bar-container">
+                                <div class="bar-label"><span>Team Sports</span><span id="chartCat2Label">0</span></div>
+                                <div class="bar-track"><div id="chartCat2Bar" class="bar-fill bar-cat2" style="width: 0%;"></div></div>
+                            </div>
+                            <div class="bar-container">
+                                <div class="bar-label"><span>Track and Field</span><span id="chartCat3Label">0</span></div>
+                                <div class="bar-track"><div id="chartCat3Bar" class="bar-fill bar-cat3" style="width: 0%;"></div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Performers Table -->
+                    <div class="content-card">
+                        <div class="card-header-title">
+                            <span>⭐ Top Evaluated Athletes</span>
+                            <button class="btn-primary" onclick="showSection('evaluateView')">Run Multithreaded Evaluation</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Registration ID</th>
+                                        <th>Student Name</th>
+                                        <th>Department</th>
+                                        <th>Sports Category</th>
+                                        <th>Academic SGPA</th>
+                                        <th>SPI Score</th>
+                                        <th>Award Tier</th>
+                                        <th>Fee Waiver</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="topPerformersBody">
+                                    <tr><td colspan="8" style="text-align:center;">Loading athlete data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. REGISTER ATHLETE (PHASE 1) -->
+                <div id="registerView" class="section-view">
+                    <div class="content-card">
+                        <div class="card-header-title">
+                            <span>Phase 1: Student Athlete Registration</span>
+                        </div>
+                        <form id="athleteRegisterForm">
+                            <div class="form-grid-3">
+                                <div class="form-control-group">
+                                    <label>Student Full Name *</label>
+                                    <input type="text" id="regStudentName" placeholder="e.g. Arun Prakash R" required>
+                                </div>
+                                <div class="form-control-group">
+                                    <label>Department *</label>
+                                    <select id="regDepartment" required>
+                                        <option value="CSE">Computer Science &amp; Engg (CSE)</option>
+                                        <option value="ECE">Electronics &amp; Comm Engg (ECE)</option>
+                                        <option value="MECH">Mechanical Engg (MECH)</option>
+                                        <option value="EEE">Electrical &amp; Electronics Engg (EEE)</option>
+                                        <option value="IT">Information Technology (IT)</option>
+                                        <option value="CIVIL">Civil Engg (CIVIL)</option>
+                                        <option value="AIDS">Artificial Intelligence &amp; Data Science (AIDS)</option>
+                                        <option value="BME">Biomedical Engg (BME)</option>
+                                    </select>
+                                </div>
+                                <div class="form-control-group">
+                                    <label>Academic Year (1 - 4) *</label>
+                                    <input type="number" id="regAcademicYear" min="1" max="4" value="3" required>
+                                </div>
+                            </div>
+
+                            <div class="form-grid-3">
+                                <div class="form-control-group">
+                                    <label>Semester (1 - 8) *</label>
+                                    <input type="number" id="regSemester" min="1" max="8" value="5" required>
+                                </div>
+                                <div class="form-control-group">
+                                    <label>Sports Category *</label>
+                                    <select id="regSportsCategory" required>
+                                        <option value="INDIVIDUAL_SPORTS">Individual Sports (Fitness 30%, Tourn 50%, Disc 20%)</option>
+                                        <option value="TEAM_SPORTS">Team Sports (Fitness 40%, Tourn 40%, Teamwork 20%)</option>
+                                        <option value="TRACK_AND_FIELD">Track and Field (Fitness 50%, Trials 40%, Disc 10%)</option>
+                                    </select>
+                                </div>
+                                <div class="form-control-group">
+                                    <label>Sports Discipline Name *</label>
+                                    <input type="text" id="regSportsName" placeholder="e.g. Badminton, Cricket, 100m Sprint" required>
+                                </div>
+                            </div>
+
+                            <div class="form-grid-3">
+                                <div class="form-control-group">
+                                    <label>Academic SGPA (0.00 - 10.00) *</label>
+                                    <input type="number" step="0.01" id="regSgpa" min="0" max="10" placeholder="e.g. 8.20 (Min 6.0 for scholarship)" required>
+                                </div>
+                                <div class="form-control-group">
+                                    <label>Physical Fitness Score (0 - 100)</label>
+                                    <input type="number" step="0.1" id="regFitnessScore" min="0" max="100" placeholder="e.g. 85.5">
+                                </div>
+                                <div class="form-control-group">
+                                    <label>Endurance Score (0 - 100)</label>
+                                    <input type="number" step="0.1" id="regEnduranceScore" min="0" max="100" placeholder="e.g. 78.0">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn-primary" style="margin-top:10px;">Register Student Athlete</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 3. FITNESS SCORES (PHASE 1) -->
+                <div id="fitnessView" class="section-view">
+                    <div class="content-card">
+                        <div class="card-header-title">
+                            <span>Phase 1: Physical Fitness &amp; Endurance Entry</span>
+                        </div>
+                        <form id="fitnessForm">
+                            <div class="form-grid-3">
+                                <div class="form-control-group">
+                                    <label>Athlete Registration ID *</label>
+                                    <input type="text" id="fitRegId" placeholder="e.g. KEC-SPT-2026-001" required>
+                                </div>
+                                <div class="form-control-group">
+                                    <label>Fitness Assessment Score (0 - 100) *</label>
+                                    <input type="number" step="0.1" id="fitScore" min="0" max="100" required>
+                                </div>
+                                <div class="form-control-group">
+                                    <label>Endurance Assessment Score (0 - 100) *</label>
+                                    <input type="number" step="0.1" id="fitEndurance" min="0" max="100" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-primary">Save Fitness Record</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 4. TOURNAMENT PERFORMANCE (PHASE 2) -->
+                <div id="tournamentView" class="section-view">
+                    <div class="content-card">
+                        <div class="card-header-title">
+                            <span>Phase 2: Tournament Achievement Entry</span>
+                        </div>
+                        <form id="tournamentForm">
+                            <div class="form-grid-3">
+                                <div class="form-control-group">
+                                    <label>Athlete Registration ID *</label>
+                                    <input type="text" id="tournRegId" placeholder="e.g. KEC-SPT-2026-001" required>
+                                </div>
+                                <div class="form-control-group">
+                                    <label>Tournament Name *</label>
+                                    <input type="text" id="tournName" placeholder="e.g. Anna University Zonal Meet" required>
+                                </div>
+                                <div class="form-control-group">
+                                    <label>Tournament Level *</label>
+                                    <select id="tournLevel" required>
+                                        <option value="ZONAL">Zonal Level</option>
+                                        <option value="INTER_COLLEGE">Inter-College Level</option>
+                                        <option value="STATE">State Level</option>
+                                        <option value="NATIONAL">National Level</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-grid-3">
+                                <div class="form-control-group">
+                                    <label>Tournament Points (0 - 100) *</label>
+                                    <input type="number" step="0.1" id="tournPoints" min="0" max="100" placeholder="Min 40 for Individual Sports" required>
+                                </div>
+                                <div class="form-control-group">
+                                    <label>Achievement / Position</label>
+                                    <input type="text" id="tournAchievement" placeholder="e.g. Gold Medalist, Semi-Finalist">
+                                </div>
+                                <div class="form-control-group">
+                                    <label>Teamwork Score (0 - 100, for Team Sports)</label>
+                                    <input type="number" step="0.1" id="tournTeamwork" min="0" max="100" placeholder="e.g. 85.0">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-primary">Save Tournament Record</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 5. TRIAL TIMINGS & DISCIPLINE (PHASE 3) -->
+                <div id="trialsView" class="section-view">
+                    <div class="content-card">
+                        <div class="card-header-title">
+                            <span>Phase 3: Track &amp; Field Timed Trials &amp; Discipline</span>
+                        </div>
+                        <form id="trialForm">
+                            <div class="form-grid-3">
+                                <div class="form-control-group">
+                                    <label>Athlete Registration ID *</label>
+                                    <input type="text" id="trialRegId" placeholder="e.g. KEC-SPT-2026-005" required>
+                                </div>
+                                <div class="form-control-group">
+                                    <label>Trial Event Name *</label>
+                                    <input type="text" id="trialEventName" placeholder="e.g. 100m Sprint, 400m Relay" required>
+                                </div>
+                                <div class="form-control-group">
+                                    <label>Trial Timing (MM:SS.ms) *</label>
+                                    <input type="text" id="trialTimingStr" placeholder="e.g. 00:11.25 or 02:15.45" required>
+                                </div>
+                            </div>
+                            <div class="form-grid-2">
+                                <div class="form-control-group">
+                                    <label>Discipline Metric Score (0 - 100) *</label>
+                                    <input type="number" step="0.1" id="trialDiscipline" min="0" max="100" value="85" required>
+                                </div>
+                                <div class="form-control-group">
+                                    <label>Coach Remarks (Sanitized)</label>
+                                    <input type="text" id="trialRemarks" placeholder="Feedback on technique, posture, split times">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-primary">Record Trial Timing</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 6. CSV TIMING LOGS IMPORT -->
+                <div id="csvView" class="section-view">
+                    <div class="content-card">
+                        <div class="card-header-title">
+                            <span>File Handling: Batch Import Trial Timings from CSV</span>
+                        </div>
+                        <p style="color:#616161; font-size:0.9rem; margin-bottom:15px;">
+                            Upload a CSV file containing timed trial logs. Expected columns: <code>registration_id, event_name, trial_timing, discipline_score, coach_remarks</code>.
+                        </p>
+                        <div style="border: 2px dashed #9fa8da; padding: 30px; text-align: center; border-radius: 8px; background: #fafafa; margin-bottom: 20px;">
+                            <input type="file" id="csvFileInput" accept=".csv" style="margin-bottom: 12px;"><br>
+                            <button class="btn-primary" onclick="uploadCsvFile()">Upload and Process CSV</button>
+                            <button class="btn-secondary" onclick="importServerDefaultCsv()" style="margin-left: 10px;">Load Server Sample CSV (uploads/trial_timings.csv)</button>
+                        </div>
+                        <div id="csvResultBox" style="display:none; padding:15px; border-radius:6px; background:#e8f5e9; color:#2e7d32; font-weight:600;"></div>
+                    </div>
+                </div>
+
+                <!-- 7. MULTITHREADED EVALUATOR -->
+                <div id="evaluateView" class="section-view">
+                    <div class="content-card">
+                        <div class="card-header-title">
+                            <span>Java Multithreaded Evaluation Engine</span>
+                        </div>
+                        <p style="color:#616161; font-size:0.9rem; margin-bottom:20px;">
+                            Executes parallel threads concurrently across all sports categories (Individual Sports, Team Sports, Track &amp; Field).
+                            Applies institutional SPI formulas, category minimum thresholds, and academic SGPA eligibility rules.
+                        </p>
+                        <div style="display:flex; gap:12px; margin-bottom:20px;">
+                            <button class="btn-success" onclick="runMultithreadedEvaluation()">🚀 Run Concurrent Parallel Evaluation</button>
+                            <button class="btn-secondary" onclick="generateAllLetters()">Generate All Award Letters</button>
+                        </div>
+                        <div style="font-weight:700; color:#1a237e; margin-bottom:6px;">Multithreading Execution Log:</div>
+                        <div id="threadExecutionConsole" class="console-box">Click 'Run Concurrent Parallel Evaluation' to start parallel ExecutorService threads...</div>
+                    </div>
+                </div>
+
+                <!-- 8. SCHOLARSHIP AWARD LIST -->
+                <div id="scholarshipView" class="section-view">
+                    <div class="content-card">
+                        <div class="card-header-title">
+                            <span>Scholarship Allocation &amp; Fee Waiver Register</span>
+                        </div>
+                        <!-- Filters -->
+                        <div class="form-grid-3" style="margin-bottom:20px;">
+                            <div class="form-control-group">
+                                <label>Filter by Category</label>
+                                <select id="filterCategory" onchange="filterScholarshipTable()">
+                                    <option value="ALL">All Categories</option>
+                                    <option value="INDIVIDUAL_SPORTS">Individual Sports</option>
+                                    <option value="TEAM_SPORTS">Team Sports</option>
+                                    <option value="TRACK_AND_FIELD">Track and Field</option>
+                                </select>
+                            </div>
+                            <div class="form-control-group">
+                                <label>Filter by Award Tier</label>
+                                <select id="filterTier" onchange="filterScholarshipTable()">
+                                    <option value="ALL">All Tiers</option>
+                                    <option value="GOLD">Gold (100% Waiver)</option>
+                                    <option value="SILVER">Silver (50% Waiver)</option>
+                                    <option value="BRONZE">Bronze (25% Waiver)</option>
+                                    <option value="NO_AWARD">No Award (0% Waiver)</option>
+                                </select>
+                            </div>
+                            <div class="form-control-group">
+                                <label>Filter by Department</label>
+                                <select id="filterDepartment" onchange="filterScholarshipTable()">
+                                    <option value="ALL">All Departments</option>
+                                    <option value="CSE">CSE</option>
+                                    <option value="ECE">ECE</option>
+                                    <option value="MECH">MECH</option>
+                                    <option value="EEE">EEE</option>
+                                    <option value="IT">IT</option>
+                                    <option value="CIVIL">CIVIL</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="data-table" id="scholarshipDataTable">
+                                <thead>
+                                    <tr>
+                                        <th>Registration ID</th>
+                                        <th>Student Name</th>
+                                        <th>Dept</th>
+                                        <th>Category</th>
+                                        <th>SGPA</th>
+                                        <th>SPI</th>
+                                        <th>Award Tier</th>
+                                        <th>Fee Waiver</th>
+                                        <th>Letter</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="scholarshipTableBody">
+                                    <tr><td colspan="9" style="text-align:center;">Loading scholarship records...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 9. AWARD LETTERS (.TXT) -->
+                <div id="reportsView" class="section-view">
+                    <div class="content-card">
+                        <div class="card-header-title">
+                            <span>Scholarship Award Letters &amp; Official Reports</span>
+                            <button class="btn-success" onclick="generateAllLetters()">Generate All Letters</button>
+                        </div>
+                        <div class="form-grid-2" style="margin-bottom:20px;">
+                            <div class="form-control-group">
+                                <label>Generate Single Letter by Registration ID</label>
+                                <div style="display:flex; gap:10px;">
+                                    <input type="text" id="singleLetterRegId" placeholder="e.g. KEC-SPT-2026-001">
+                                    <button class="btn-primary" onclick="generateSingleLetter()">Generate</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="font-weight:700; color:#1a237e; margin-bottom:8px;">Award Letter Preview:</div>
+                        <pre id="letterPreviewBox" style="background:#f8f9fa; border:1px solid #cfd8dc; padding:20px; border-radius:6px; font-family:monospace; max-height:400px; overflow-y:auto;">Select an athlete or enter registration ID to view generated award letter...</pre>
+                    </div>
+                </div>
+
+                <!-- 10. SEARCH ATHLETE PROFILE -->
+                <div id="searchView" class="section-view">
+                    <div class="content-card">
+                        <div class="card-header-title">
+                            <span>Search Athlete Performance Record</span>
+                        </div>
+                        <div style="display:flex; gap:12px; max-width:500px; margin-bottom:25px;">
+                            <input type="text" id="searchRegInput" placeholder="Enter Registration ID (e.g. KEC-SPT-2026-001)" class="form-control-group" style="flex-grow:1; padding:10px 14px; border:1px solid #ccc; border-radius:6px;">
+                            <button class="btn-primary" onclick="searchAthlete()">Search</button>
+                        </div>
+
+                        <div id="searchResultCard" style="display:none; background:#fafbfc; border:1px solid #e0e0e0; border-radius:8px; padding:25px;">
+                            <h3 id="srName" style="color:#1a237e; margin-bottom:12px;"></h3>
+                            <div class="form-grid-3" style="font-size:0.92rem; line-height:1.8;">
+                                <div>
+                                    <strong>Registration ID:</strong> <span id="srRegId"></span><br>
+                                    <strong>Department:</strong> <span id="srDept"></span><br>
+                                    <strong>Academic Year:</strong> Year <span id="srYear"></span>, Sem <span id="srSem"></span>
+                                </div>
+                                <div>
+                                    <strong>Sports Category:</strong> <span id="srCat"></span><br>
+                                    <strong>Sports Discipline:</strong> <span id="srSport"></span><br>
+                                    <strong>Academic SGPA:</strong> <span id="srSgpa"></span> (<span id="srElig"></span>)
+                                </div>
+                                <div>
+                                    <strong>Sports Performance Index:</strong> <span id="srSpi" style="font-size:1.1rem; color:#1a237e; font-weight:700;"></span><br>
+                                    <strong>Scholarship Award:</strong> <span id="srAward"></span><br>
+                                    <strong>Fee Waiver:</strong> <span id="srWaiver" style="font-weight:700; color:#2e7d32;"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast"></div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
