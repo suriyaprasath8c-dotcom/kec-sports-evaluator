@@ -13,9 +13,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-/**
- * MainApp - Interactive Console Application for KEC Student Sports Athletic
- * Performance & Scholarship Evaluator.
+/*
+ * MainApp.java
+ * Command-line interface for testing and demonstrating all modules of the
+ * KEC Student Sports Athletic Performance & Scholarship Evaluator.
+ *
+ * Team Project - Kongu Engineering College (Autonomous)
+ * Student 1: Vaisnav K (App Host & Multithreading)
+ * Student 2: Database Admin (OCI VM 2 MySQL Host)
  */
 public class MainApp {
 
@@ -27,115 +32,114 @@ public class MainApp {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         System.out.println("================================================================");
-        System.out.println("   KONGU ENGINEERING COLLEGE - SPORTS SCHOLARSHIP EVALUATOR");
+        System.out.println("   KONGU ENGINEERING COLLEGE (AUTONOMOUS) - PERUNDURAI");
+        System.out.println("       Sports Board • Scholarship Evaluation System");
         System.out.println("================================================================");
 
-        // Verify DB Connection
+        // Ping database before presenting menu
         boolean dbOk = DBConnection.getInstance().testConnection();
         if (dbOk) {
-            System.out.println("[MainApp] Database connection validated successfully.");
+            System.out.println("Database status: Connected to MySQL (" + DBConnection.getInstance().getDbUrl() + ")");
         } else {
-            System.err.println("[MainApp] Notice: Database connection could not be established.");
-            System.err.println("[MainApp] Please verify application.properties or run OCI VM 2 MySQL.");
+            System.err.println("Notice: Could not connect to MySQL at startup.");
+            System.err.println("Please check application.properties or run OCI VM 2 MySQL database.");
         }
 
-        boolean running = true;
-        while (running) {
-            displayMenu();
-            System.out.print("Enter your choice (1-15): ");
+        boolean keepRunning = true;
+        while (keepRunning) {
+            printMenu();
+            System.out.print("Select an option (1-15): ");
             String input = scanner.nextLine().trim();
 
             try {
-                int choice = Integer.parseInt(input);
-                switch (choice) {
+                int option = Integer.parseInt(input);
+                switch (option) {
                     case 1:
-                        registerNewAthlete(scanner);
+                        registerAthlete(scanner);
                         break;
                     case 2:
-                        recordFitnessScores(scanner);
+                        recordFitness(scanner);
                         break;
                     case 3:
-                        recordTournamentScores(scanner);
+                        recordTournament(scanner);
                         break;
                     case 4:
-                        recordTrialTimings(scanner);
+                        recordTrials(scanner);
                         break;
                     case 5:
-                        importTrialTimingsCSV(scanner);
+                        importCsvTimings(scanner);
                         break;
                     case 6:
-                        viewAllAthletes();
+                        listAllAthletes();
                         break;
                     case 7:
-                        checkAcademicEligibility(scanner);
+                        verifyAcademicEligibility(scanner);
                         break;
                     case 8:
-                        evaluateSingleAthlete(scanner);
+                        evaluateSingle(scanner);
                         break;
                     case 9:
-                        evaluateAllAthletesMultithreaded();
+                        evaluateAllParallel();
                         break;
                     case 10:
-                        generateSingleAwardLetter(scanner);
+                        generateSingleLetter(scanner);
                         break;
                     case 11:
-                        generateAllAwardLetters();
+                        generateAllLetters();
                         break;
                     case 12:
-                        viewScholarshipSummary();
+                        viewScholarshipReport();
                         break;
                     case 13:
-                        searchAthleteByRegId(scanner);
+                        searchAthlete(scanner);
                         break;
                     case 14:
-                        testDatabaseConnection();
+                        testDbConnection();
                         break;
                     case 15:
-                        System.out.println("\nExiting KEC Sports Evaluator. Goodbye!");
-                        running = false;
+                        System.out.println("\nExiting application. Thank you!");
+                        keepRunning = false;
                         break;
                     default:
-                        System.out.println("Invalid choice. Please choose from 1 to 15.");
+                        System.out.println("Please select a number between 1 and 15.");
                 }
             } catch (NumberFormatException e) {
-                System.out.println("Please enter a valid numeric choice.");
+                System.out.println("Invalid input. Please enter a number.");
             } catch (Exception e) {
-                System.err.println("[MainApp] Error: " + e.getMessage());
+                System.err.println("Error: " + e.getMessage());
             }
 
-            if (running) {
-                System.out.println("\nPress ENTER to continue...");
+            if (keepRunning) {
+                System.out.println("\nPress [Enter] to continue...");
                 scanner.nextLine();
             }
         }
         scanner.close();
     }
 
-    private static void displayMenu() {
-        System.out.println("\n================================================================");
-        System.out.println("                  MAIN APPLICATION MENU");
-        System.out.println("================================================================");
-        System.out.println(" 1. Register New Athlete (Phase 1)");
-        System.out.println(" 2. Record Physical Fitness & Endurance (Phase 1)");
+    private static void printMenu() {
+        System.out.println("\n----------------- MAIN APPLICATION MENU -----------------");
+        System.out.println(" 1. Register Student Athlete (Phase 1)");
+        System.out.println(" 2. Record Physical Fitness & Endurance Scores (Phase 1)");
         System.out.println(" 3. Record Tournament Performance (Phase 2)");
-        System.out.println(" 4. Record Trial Timings & Discipline (Phase 3)");
-        System.out.println(" 5. Import Trial Timings from CSV");
-        System.out.println(" 6. View All Athletes");
-        System.out.println(" 7. Check Academic Eligibility (SGPA Filter)");
-        System.out.println(" 8. Evaluate Single Athlete");
-        System.out.println(" 9. Evaluate All Athletes (Multithreaded Parallel Execution)");
+        System.out.println(" 4. Record Track & Field Trials & Discipline (Phase 3)");
+        System.out.println(" 5. Import Trial Timings from CSV File");
+        System.out.println(" 6. View All Registered Athletes");
+        System.out.println(" 7. Verify Academic Eligibility (SGPA Filter >= 6.0)");
+        System.out.println(" 8. Evaluate Single Athlete (SPI Calculation)");
+        System.out.println(" 9. Evaluate All Athletes (Multithreaded Concurrent Execution)");
         System.out.println(" 10. Generate Scholarship Award Letter (.txt)");
         System.out.println(" 11. Generate All Award Letters & Summary Report");
-        System.out.println(" 12. View Scholarship Summary & Fee Waiver Total");
+        System.out.println(" 12. View Scholarship Summary & Total Fee Waiver");
         System.out.println(" 13. Search Athlete by Registration ID");
-        System.out.println(" 14. Test Database Connection");
+        System.out.println(" 14. Test MySQL Database Connection");
         System.out.println(" 15. Exit");
-        System.out.println("================================================================");
+        System.out.println("---------------------------------------------------------");
     }
 
-    private static void registerNewAthlete(Scanner scanner) {
+    private static void registerAthlete(Scanner scanner) {
         System.out.println("\n--- [Phase 1: Athlete Registration] ---");
-        System.out.print("Student Full Name: ");
+        System.out.print("Student Name: ");
         String name = scanner.nextLine().trim();
 
         System.out.print("Department (e.g. CSE, ECE, MECH, EEE, IT, CIVIL): ");
@@ -147,17 +151,17 @@ public class MainApp {
         System.out.print("Semester (1-8): ");
         int sem = Integer.parseInt(scanner.nextLine().trim());
 
-        System.out.println("Select Sports Category:");
-        System.out.println("  1. INDIVIDUAL_SPORTS");
-        System.out.println("  2. TEAM_SPORTS");
-        System.out.println("  3. TRACK_AND_FIELD");
+        System.out.println("Sports Category:");
+        System.out.println("  1. Individual Sports (Badminton, Table Tennis, Tennis)");
+        System.out.println("  2. Team Sports (Cricket, Volleyball, Football, Basketball)");
+        System.out.println("  3. Track and Field (100m, 400m Relay, Long Jump, etc.)");
         System.out.print("Choice (1-3): ");
         int catChoice = Integer.parseInt(scanner.nextLine().trim());
         String category = "INDIVIDUAL_SPORTS";
         if (catChoice == 2) category = "TEAM_SPORTS";
         else if (catChoice == 3) category = "TRACK_AND_FIELD";
 
-        System.out.print("Sport Name (e.g. Badminton, Cricket, 100m Sprint): ");
+        System.out.print("Sport / Discipline Name: ");
         String sportName = scanner.nextLine().trim();
 
         System.out.print("Academic SGPA (0.00 - 10.00): ");
@@ -166,115 +170,62 @@ public class MainApp {
         int currentYear = 2026;
         int nextSeq = dao.getNextSequenceNumber(currentYear);
         String regId = StringProcessor.generateRegistrationId(nextSeq, currentYear);
+        String status = (sgpa >= 6.0) ? "ELIGIBLE" : "INELIGIBLE";
 
-        String eligStatus = (sgpa >= 6.0) ? "ELIGIBLE" : "INELIGIBLE";
-
-        Athlete athlete = new Athlete(regId, name, dept, year, sem, category, sportName, sgpa, eligStatus);
+        Athlete athlete = new Athlete(regId, name, dept, year, sem, category, sportName, sgpa, status);
         int athleteId = dao.insertAthlete(athlete);
 
         if (athleteId > 0) {
-            System.out.println("[SUCCESS] Athlete Registered Successfully!");
-            System.out.println("  Athlete ID      : " + athleteId);
-            System.out.println("  Registration ID : " + regId);
-            System.out.println("  Eligibility     : " + eligStatus);
+            System.out.println("Successfully registered athlete!");
+            System.out.println("  Assigned Reg ID : " + regId);
+            System.out.println("  Eligibility     : " + status + (sgpa < 6.0 ? " (SGPA < 6.0)" : ""));
 
-            // Optional immediate Phase 1 Fitness Log
-            System.out.print("Would you like to enter Fitness & Endurance scores now? (y/n): ");
+            System.out.print("Enter fitness scores now? (y/n): ");
             String ans = scanner.nextLine().trim();
             if ("y".equalsIgnoreCase(ans)) {
                 System.out.print("Fitness Score (0-100): ");
-                double fitScore = Double.parseDouble(scanner.nextLine().trim());
+                double fit = Double.parseDouble(scanner.nextLine().trim());
                 System.out.print("Endurance Score (0-100): ");
-                double endScore = Double.parseDouble(scanner.nextLine().trim());
-                FitnessLog log = new FitnessLog(athleteId, fitScore, endScore, new Date(System.currentTimeMillis()));
+                double end = Double.parseDouble(scanner.nextLine().trim());
+                FitnessLog log = new FitnessLog(athleteId, fit, end, new Date(System.currentTimeMillis()));
                 dao.insertFitnessLog(log);
-                System.out.println("[SUCCESS] Fitness scores recorded for " + regId);
+                System.out.println("Fitness scores recorded.");
             }
         } else {
-            System.err.println("[FAILED] Could not register athlete.");
+            System.err.println("Registration failed. Please check database logs.");
         }
     }
 
-    private static void recordFitnessScores(Scanner scanner) {
+    private static void recordFitness(Scanner scanner) {
         System.out.println("\n--- [Phase 1: Record Fitness Scores] ---");
-        System.out.print("Enter Athlete Registration ID (e.g. KEC-SPT-2026-001): ");
+        System.out.print("Enter Registration ID (e.g. KEC-SPT-2026-001): ");
         String regId = scanner.nextLine().trim();
-
-        if (!StringProcessor.validateRegistrationId(regId)) {
-            System.err.println("Invalid Registration ID format!");
-            return;
-        }
 
         Athlete athlete = dao.getAthleteByRegistrationId(regId);
         if (athlete == null) {
-            System.err.println("Athlete not found with Registration ID: " + regId);
+            System.err.println("Athlete not found for ID: " + regId);
             return;
         }
 
         System.out.println("Athlete: " + athlete.getStudentName() + " (" + athlete.getSportsName() + ")");
         System.out.print("Fitness Score (0-100): ");
-        double fitScore = Double.parseDouble(scanner.nextLine().trim());
+        double fit = Double.parseDouble(scanner.nextLine().trim());
 
         System.out.print("Endurance Score (0-100): ");
-        double endScore = Double.parseDouble(scanner.nextLine().trim());
+        double end = Double.parseDouble(scanner.nextLine().trim());
 
-        FitnessLog log = new FitnessLog(athlete.getAthleteId(), fitScore, endScore, new Date(System.currentTimeMillis()));
+        FitnessLog log = new FitnessLog(athlete.getAthleteId(), fit, end, new Date(System.currentTimeMillis()));
         int id = dao.insertFitnessLog(log);
         if (id > 0) {
-            System.out.println("[SUCCESS] Fitness log recorded (ID: " + id + ")");
+            System.out.println("Fitness record saved successfully (Record ID: " + id + ").");
         } else {
-            System.err.println("[FAILED] Could not save fitness log.");
+            System.err.println("Failed to save fitness record.");
         }
     }
 
-    private static void recordTournamentScores(Scanner scanner) {
+    private static void recordTournament(Scanner scanner) {
         System.out.println("\n--- [Phase 2: Record Tournament Performance] ---");
-        System.out.print("Enter Athlete Registration ID: ");
-        String regId = scanner.nextLine().trim();
-
-        Athlete athlete = dao.getAthleteByRegistrationId(regId);
-        if (athlete == null) {
-            System.err.println("Athlete not found with Registration ID: " + regId);
-            return;
-        }
-
-        System.out.println("Athlete: " + athlete.getStudentName() + " | Category: " + athlete.getSportsCategory());
-        System.out.print("Tournament Name: ");
-        String tournName = scanner.nextLine().trim();
-
-        System.out.println("Tournament Level:");
-        System.out.println("  1. ZONAL\n  2. INTER_COLLEGE\n  3. STATE\n  4. NATIONAL");
-        System.out.print("Choice (1-4): ");
-        int lvl = Integer.parseInt(scanner.nextLine().trim());
-        String level = "ZONAL";
-        if (lvl == 2) level = "INTER_COLLEGE";
-        else if (lvl == 3) level = "STATE";
-        else if (lvl == 4) level = "NATIONAL";
-
-        System.out.print("Tournament Points (0-100): ");
-        double points = Double.parseDouble(scanner.nextLine().trim());
-
-        System.out.print("Achievement / Position (e.g. Gold Medalist, Runner-Up, Semi-Finalist): ");
-        String ach = scanner.nextLine().trim();
-
-        double teamworkScore = 0.0;
-        if ("TEAM_SPORTS".equalsIgnoreCase(athlete.getSportsCategory())) {
-            System.out.print("Teamwork Score (0-100): ");
-            teamworkScore = Double.parseDouble(scanner.nextLine().trim());
-        }
-
-        TournamentScore score = new TournamentScore(athlete.getAthleteId(), tournName, level, points, ach, teamworkScore);
-        int id = dao.insertTournamentScore(score);
-        if (id > 0) {
-            System.out.println("[SUCCESS] Tournament score recorded successfully (ID: " + id + ")");
-        } else {
-            System.err.println("[FAILED] Could not record tournament score.");
-        }
-    }
-
-    private static void recordTrialTimings(Scanner scanner) {
-        System.out.println("\n--- [Phase 3: Record Trial Timings & Discipline] ---");
-        System.out.print("Enter Athlete Registration ID: ");
+        System.out.print("Enter Registration ID: ");
         String regId = scanner.nextLine().trim();
 
         Athlete athlete = dao.getAthleteByRegistrationId(regId);
@@ -283,42 +234,87 @@ public class MainApp {
             return;
         }
 
-        System.out.print("Trial Event Name (e.g. 100m Sprint, 400m Relay): ");
+        System.out.println("Athlete: " + athlete.getStudentName() + " | Category: " + athlete.getSportsCategory());
+        System.out.print("Tournament Name: ");
+        String name = scanner.nextLine().trim();
+
+        System.out.println("Tournament Level:");
+        System.out.println("  1. ZONAL\n  2. INTER_COLLEGE\n  3. STATE\n  4. NATIONAL");
+        System.out.print("Choice (1-4): ");
+        int lvlChoice = Integer.parseInt(scanner.nextLine().trim());
+        String level = "ZONAL";
+        if (lvlChoice == 2) level = "INTER_COLLEGE";
+        else if (lvlChoice == 3) level = "STATE";
+        else if (lvlChoice == 4) level = "NATIONAL";
+
+        System.out.print("Tournament Points (0-100): ");
+        double points = Double.parseDouble(scanner.nextLine().trim());
+
+        System.out.print("Achievement (e.g. Gold Medalist, Semi-Finalist): ");
+        String achievement = scanner.nextLine().trim();
+
+        double teamwork = 0.0;
+        if ("TEAM_SPORTS".equalsIgnoreCase(athlete.getSportsCategory())) {
+            System.out.print("Teamwork Score (0-100): ");
+            teamwork = Double.parseDouble(scanner.nextLine().trim());
+        }
+
+        TournamentScore score = new TournamentScore(athlete.getAthleteId(), name, level, points, achievement, teamwork);
+        int id = dao.insertTournamentScore(score);
+        if (id > 0) {
+            System.out.println("Tournament record saved successfully.");
+        } else {
+            System.err.println("Could not save tournament record.");
+        }
+    }
+
+    private static void recordTrials(Scanner scanner) {
+        System.out.println("\n--- [Phase 3: Record Timed Trials & Discipline] ---");
+        System.out.print("Enter Registration ID: ");
+        String regId = scanner.nextLine().trim();
+
+        Athlete athlete = dao.getAthleteByRegistrationId(regId);
+        if (athlete == null) {
+            System.err.println("Athlete not found: " + regId);
+            return;
+        }
+
+        System.out.print("Event Name (e.g. 100m Sprint, 400m Relay): ");
         String event = scanner.nextLine().trim();
 
         System.out.print("Trial Timing (Format MM:SS.ms, e.g. 00:11.25 or 02:15.45): ");
         String timing = scanner.nextLine().trim();
 
         if (!StringProcessor.validateTrialTiming(timing)) {
-            System.err.println("Invalid timing format! Expected MM:SS.ms");
+            System.err.println("Invalid format. Please use MM:SS.ms (e.g. 00:11.25)");
             return;
         }
 
-        double actualSec = StringProcessor.parseTrialTiming(timing);
-        double benchmarkSec = StringProcessor.getBenchmarkTime(event);
-        double normalizedScore = StringProcessor.normalizeTrialScore(actualSec, benchmarkSec);
+        double actualSeconds = StringProcessor.parseTrialTiming(timing);
+        double benchmarkSeconds = StringProcessor.getBenchmarkTime(event);
+        double normalizedScore = StringProcessor.normalizeTrialScore(actualSeconds, benchmarkSeconds);
 
-        System.out.printf("  Calculated Time: %.2f s | Benchmark: %.2f s | Normalized Score: %.2f/100\n",
-                actualSec, benchmarkSec, normalizedScore);
+        System.out.printf("  Actual Time: %.2fs | Benchmark: %.2fs | Converted Score: %.2f/100%n",
+                actualSeconds, benchmarkSeconds, normalizedScore);
 
         System.out.print("Discipline Score (0-100): ");
-        double discScore = Double.parseDouble(scanner.nextLine().trim());
+        double discipline = Double.parseDouble(scanner.nextLine().trim());
 
         System.out.print("Coach Remarks: ");
         String remarks = StringProcessor.sanitizeCoachRemarks(scanner.nextLine().trim());
 
-        TrialLog log = new TrialLog(athlete.getAthleteId(), event, timing, normalizedScore, discScore, remarks);
+        TrialLog log = new TrialLog(athlete.getAthleteId(), event, timing, normalizedScore, discipline, remarks);
         int id = dao.insertTrialLog(log);
         if (id > 0) {
-            System.out.println("[SUCCESS] Trial timing log recorded successfully (ID: " + id + ")");
+            System.out.println("Trial timing recorded successfully.");
         } else {
-            System.err.println("[FAILED] Could not save trial log.");
+            System.err.println("Could not save trial log.");
         }
     }
 
-    private static void importTrialTimingsCSV(Scanner scanner) {
-        System.out.println("\n--- [File I/O: Import Trial Timings from CSV] ---");
-        System.out.print("Enter CSV File Path (default: uploads/trial_timings.csv): ");
+    private static void importCsvTimings(Scanner scanner) {
+        System.out.println("\n--- [CSV Batch Import: Track & Field Trials] ---");
+        System.out.print("Enter CSV path (press Enter for 'uploads/trial_timings.csv'): ");
         String path = scanner.nextLine().trim();
         if (path.isEmpty()) {
             path = "uploads/trial_timings.csv";
@@ -326,47 +322,41 @@ public class MainApp {
 
         File file = new File(path);
         if (!file.exists()) {
-            System.err.println("File does not exist at: " + file.getAbsolutePath());
+            System.err.println("File not found at: " + file.getAbsolutePath());
             return;
         }
 
-        List<TrialLog> importedLogs = CSVHandler.importTrialTimings(path);
-        System.out.println("Parsed " + importedLogs.size() + " records from CSV.");
-
+        List<TrialLog> imported = CSVHandler.importTrialTimings(path);
         int count = 0;
-        for (TrialLog log : importedLogs) {
+        for (TrialLog log : imported) {
             if (log.getRegistrationId() != null) {
                 Athlete athlete = dao.getAthleteByRegistrationId(log.getRegistrationId());
                 if (athlete != null) {
                     log.setAthleteId(athlete.getAthleteId());
-                    // Compute normalized score using benchmark
-                    double actualSec = StringProcessor.parseTrialTiming(log.getTrialTiming());
+                    double actual = StringProcessor.parseTrialTiming(log.getTrialTiming());
                     double bench = StringProcessor.getBenchmarkTime(log.getEventName());
-                    log.setNormalizedTrialScore(StringProcessor.normalizeTrialScore(actualSec, bench));
-
-                    int id = dao.insertTrialLog(log);
-                    if (id > 0) count++;
-                } else {
-                    System.err.println("Skipping row: Athlete registration ID not found in DB: " + log.getRegistrationId());
+                    log.setNormalizedTrialScore(StringProcessor.normalizeTrialScore(actual, bench));
+                    dao.insertTrialLog(log);
+                    count++;
                 }
             }
         }
-        System.out.println("[SUCCESS] Imported and saved " + count + " trial records into MySQL database.");
+        System.out.println("Successfully imported and saved " + count + " trial records.");
     }
 
-    private static void viewAllAthletes() {
+    private static void listAllAthletes() {
         System.out.println("\n--- [Registered Student Athletes] ---");
         List<Athlete> list = dao.getAllAthletes();
         if (list.isEmpty()) {
-            System.out.println("No athletes registered yet.");
+            System.out.println("No athletes found.");
             return;
         }
 
-        System.out.printf("%-4s %-18s %-20s %-6s %-18s %-15s %-5s %-10s\n",
-                "ID", "REGISTRATION ID", "STUDENT NAME", "DEPT", "CATEGORY", "SPORT", "SGPA", "STATUS");
+        System.out.printf("%-4s %-18s %-20s %-6s %-18s %-15s %-5s %-10s%n",
+                "ID", "REG ID", "NAME", "DEPT", "CATEGORY", "SPORT", "SGPA", "STATUS");
         System.out.println("--------------------------------------------------------------------------------------------------");
         for (Athlete a : list) {
-            System.out.printf("%-4d %-18s %-20s %-6s %-18s %-15s %5.2f %-10s\n",
+            System.out.printf("%-4d %-18s %-20s %-6s %-18s %-15s %5.2f %-10s%n",
                     a.getAthleteId(),
                     a.getRegistrationId(),
                     a.getStudentName(),
@@ -378,9 +368,9 @@ public class MainApp {
         }
     }
 
-    private static void checkAcademicEligibility(Scanner scanner) {
+    private static void verifyAcademicEligibility(Scanner scanner) {
         System.out.println("\n--- [Academic Eligibility Verification] ---");
-        System.out.print("Enter Athlete Registration ID (or press Enter to check all): ");
+        System.out.print("Enter Registration ID (leave blank to verify all): ");
         String regId = scanner.nextLine().trim();
 
         if (!regId.isEmpty()) {
@@ -391,29 +381,25 @@ public class MainApp {
             }
             String status = (a.getSgpa() >= 6.0) ? "ELIGIBLE" : "INELIGIBLE";
             dao.updateEligibilityStatus(a.getAthleteId(), status);
-            System.out.printf("Athlete: %s | SGPA: %.2f | Status: %s\n",
-                    a.getStudentName(), a.getSgpa(), status);
+            System.out.printf("Athlete: %s | SGPA: %.2f | Status: %s%n", a.getStudentName(), a.getSgpa(), status);
             if ("INELIGIBLE".equals(status)) {
-                System.out.println("Reason: SGPA < 6.0 marks athlete as INELIGIBLE. Scholarship is revoked.");
+                System.out.println("Reason: SGPA < 6.0 violates institutional minimum academic criteria.");
             }
         } else {
             List<Athlete> all = dao.getAllAthletes();
-            int eligibleCount = 0, ineligibleCount = 0;
+            int el = 0, inel = 0;
             for (Athlete a : all) {
-                String status = (a.getSgpa() >= 6.0) ? "ELIGIBLE" : "INELIGIBLE";
-                dao.updateEligibilityStatus(a.getAthleteId(), status);
-                if ("ELIGIBLE".equals(status)) eligibleCount++;
-                else ineligibleCount++;
+                String st = (a.getSgpa() >= 6.0) ? "ELIGIBLE" : "INELIGIBLE";
+                dao.updateEligibilityStatus(a.getAthleteId(), st);
+                if ("ELIGIBLE".equals(st)) el++;
+                else inel++;
             }
-            System.out.println("Updated academic eligibility for " + all.size() + " athletes.");
-            System.out.println("Eligible Athletes   : " + eligibleCount);
-            System.out.println("Ineligible Athletes : " + ineligibleCount + " (SGPA < 6.0)");
+            System.out.printf("Checked %d athletes. Eligible: %d | Ineligible: %d%n", all.size(), el, inel);
         }
     }
 
-    private static void evaluateSingleAthlete(Scanner scanner) {
-        System.out.println("\n--- [Evaluate Single Athlete] ---");
-        System.out.print("Enter Registration ID: ");
+    private static void evaluateSingle(Scanner scanner) {
+        System.out.print("\nEnter Registration ID to evaluate: ");
         String regId = scanner.nextLine().trim();
 
         Athlete athlete = dao.getAthleteByRegistrationId(regId);
@@ -424,25 +410,24 @@ public class MainApp {
 
         Scholarship s = engine.evaluateSingleAthlete(athlete.getAthleteId());
         if (s != null) {
-            System.out.println("\n>>> Evaluation Completed:");
+            System.out.println("\nEvaluation Result:");
             System.out.println("  Athlete          : " + athlete.getStudentName());
-            System.out.println("  Sports Category  : " + athlete.getSportsCategory());
-            System.out.println("  Academic SGPA    : " + athlete.getSgpa() + " (" + athlete.getEligibilityStatus() + ")");
-            System.out.println("  Calculated SPI   : " + s.getSpi() + "%");
-            System.out.println("  Scholarship Tier : " + s.getScholarshipType());
+            System.out.println("  Category         : " + athlete.getSportsCategory());
+            System.out.println("  SGPA             : " + athlete.getSgpa() + " (" + athlete.getEligibilityStatus() + ")");
+            System.out.println("  Computed SPI     : " + s.getSpi() + "%");
+            System.out.println("  Award Tier       : " + s.getScholarshipType());
             System.out.println("  Fee Waiver       : " + s.getFeeWaiver() + "%");
             System.out.println("  Remarks          : " + s.getRemarks());
         }
     }
 
-    private static void evaluateAllAthletesMultithreaded() {
+    private static void evaluateAllParallel() {
         List<Scholarship> results = engine.evaluateAllAthletes();
-        System.out.printf("\nEvaluated %d athletes successfully in parallel.\n", results.size());
+        System.out.printf("Multithreaded evaluation completed. Total evaluated: %d%n", results.size());
     }
 
-    private static void generateSingleAwardLetter(Scanner scanner) {
-        System.out.println("\n--- [Generate Single Award Letter] ---");
-        System.out.print("Enter Registration ID: ");
+    private static void generateSingleLetter(Scanner scanner) {
+        System.out.print("\nEnter Registration ID: ");
         String regId = scanner.nextLine().trim();
 
         Athlete a = dao.getAthleteByRegistrationId(regId);
@@ -459,99 +444,74 @@ public class MainApp {
 
         try {
             String path = exporter.generateAwardLetter(a, s, REPORTS_DIR);
-            System.out.println("[SUCCESS] Award letter written to: " + path);
+            System.out.println("Award letter generated: " + path);
         } catch (Exception e) {
-            System.err.println("Failed to generate award letter: " + e.getMessage());
+            System.err.println("Could not generate letter: " + e.getMessage());
         }
     }
 
-    private static void generateAllAwardLetters() {
-        System.out.println("\n--- [Generate All Award Letters & Summary] ---");
+    private static void generateAllLetters() {
         List<Athlete> athletes = dao.getAllAthletes();
         List<Scholarship> scholarships = dao.getAllScholarships();
 
         if (scholarships.isEmpty()) {
-            System.out.println("No scholarships evaluated yet. Running evaluation now...");
+            System.out.println("Running evaluation first...");
             scholarships = engine.evaluateAllAthletes();
         }
 
         try {
             int count = exporter.generateAllAwardLetters(athletes, scholarships, REPORTS_DIR);
-            String summaryPath = exporter.generateEvaluationSummary(scholarships, REPORTS_DIR);
-            System.out.println("[SUCCESS] Generated " + count + " award letters in '" + REPORTS_DIR + "/'");
-            System.out.println("[SUCCESS] Evaluation summary saved at: " + summaryPath);
+            String summary = exporter.generateEvaluationSummary(scholarships, REPORTS_DIR);
+            System.out.println("Generated " + count + " letters in '" + REPORTS_DIR + "/'");
+            System.out.println("Summary file saved at: " + summary);
         } catch (Exception e) {
             System.err.println("Error generating reports: " + e.getMessage());
         }
     }
 
-    private static void viewScholarshipSummary() {
-        System.out.println("\n--- [Scholarship Allocation Summary] ---");
+    private static void viewScholarshipReport() {
+        System.out.println("\n--- [Scholarship Summary & Allocations] ---");
         Map<String, Integer> summary = dao.getScholarshipSummary();
         double totalWaiver = dao.getTotalFeeWaiver();
 
-        System.out.println("Gold Scholarships   (100% Fee Waiver) : " + summary.getOrDefault("GOLD", 0));
-        System.out.println("Silver Scholarships (50% Fee Waiver)  : " + summary.getOrDefault("SILVER", 0));
-        System.out.println("Bronze Scholarships (25% Fee Waiver)  : " + summary.getOrDefault("BRONZE", 0));
-        System.out.println("No Award / Ineligible                 : " + summary.getOrDefault("NO_AWARD", 0));
-        System.out.printf("Total Fee Waiver Amount Allocated     : %.2f%%\n", totalWaiver);
+        System.out.println("  Gold Scholarships   (100% Waiver) : " + summary.getOrDefault("GOLD", 0));
+        System.out.println("  Silver Scholarships (50% Waiver)  : " + summary.getOrDefault("SILVER", 0));
+        System.out.println("  Bronze Scholarships (25% Waiver)  : " + summary.getOrDefault("BRONZE", 0));
+        System.out.println("  No Award / Ineligible             : " + summary.getOrDefault("NO_AWARD", 0));
+        System.out.printf("  Total Fee Waiver Percentage Allocated: %.2f%%%n", totalWaiver);
     }
 
-    private static void searchAthleteByRegId(Scanner scanner) {
-        System.out.print("\nEnter Registration ID to search: ");
+    private static void searchAthlete(Scanner scanner) {
+        System.out.print("\nEnter Registration ID: ");
         String regId = scanner.nextLine().trim();
 
         Athlete a = dao.getAthleteByRegistrationId(regId);
         if (a == null) {
-            System.out.println("No athlete found with Registration ID: " + regId);
+            System.out.println("No athlete found for ID: " + regId);
             return;
         }
 
-        System.out.println("\n========================================================");
-        System.out.println("ATHLETE PROFILE: " + a.getRegistrationId());
-        System.out.println("========================================================");
-        System.out.println("Name           : " + a.getStudentName());
-        System.out.println("Department     : " + a.getDepartment());
-        System.out.println("Year & Semester: Year " + a.getAcademicYear() + ", Sem " + a.getSemester());
-        System.out.println("Sports Category: " + a.getSportsCategory());
-        System.out.println("Sport Name     : " + a.getSportsName());
-        System.out.println("Academic SGPA  : " + a.getSgpa() + " (" + a.getEligibilityStatus() + ")");
-
-        FitnessLog f = dao.getFitnessLogByAthleteId(a.getAthleteId());
-        if (f != null) {
-            System.out.printf("Fitness Score  : %.2f | Endurance: %.2f\n", f.getFitnessScore(), f.getEnduranceScore());
-        }
-
-        TournamentScore t = dao.getTournamentScoreByAthleteId(a.getAthleteId());
-        if (t != null) {
-            System.out.printf("Tournament     : %s (%s) | Points: %.2f | Teamwork: %.2f\n",
-                    t.getTournamentName(), t.getTournamentLevel(), t.getTournamentPoints(), t.getTeamworkScore());
-        }
-
-        TrialLog tr = dao.getTrialLogByAthleteId(a.getAthleteId());
-        if (tr != null) {
-            System.out.printf("Trial Log      : %s | Timing: %s | Score: %.2f | Discipline: %.2f\n",
-                    tr.getEventName(), tr.getTrialTiming(), tr.getNormalizedTrialScore(), tr.getDisciplineScore());
-        }
+        System.out.println("\n--- Athlete Profile ---");
+        System.out.println("Registration ID : " + a.getRegistrationId());
+        System.out.println("Name            : " + a.getStudentName());
+        System.out.println("Department      : " + a.getDepartment() + " (Year " + a.getAcademicYear() + ", Sem " + a.getSemester() + ")");
+        System.out.println("Category        : " + a.getSportsCategory());
+        System.out.println("Sport Name      : " + a.getSportsName());
+        System.out.printf("SGPA            : %.2f (%s)%n", a.getSgpa(), a.getEligibilityStatus());
 
         Scholarship s = dao.getScholarshipByAthleteId(a.getAthleteId());
         if (s != null) {
-            System.out.printf("Scholarship    : %s (Fee Waiver: %.2f%%) | SPI: %.2f%%\n",
-                    s.getScholarshipType(), s.getFeeWaiver(), s.getSpi());
-            System.out.println("Remarks        : " + s.getRemarks());
+            System.out.printf("SPI Score       : %.2f%%%n", s.getSpi());
+            System.out.println("Award Tier      : " + s.getScholarshipType() + " (" + s.getFeeWaiver() + "% fee waiver)");
+            System.out.println("Evaluation Note : " + s.getRemarks());
         } else {
-            System.out.println("Scholarship    : Not evaluated yet.");
+            System.out.println("Scholarship     : Not evaluated yet.");
         }
-        System.out.println("========================================================");
     }
 
-    private static void testDatabaseConnection() {
-        System.out.println("\nTesting database connection to: " + DBConnection.getInstance().getDbUrl());
+    private static void testDbConnection() {
+        System.out.println("Testing connection to: " + DBConnection.getInstance().getDbUrl());
         boolean ok = DBConnection.getInstance().testConnection();
-        if (ok) {
-            System.out.println("[SUCCESS] Connected to MySQL database successfully.");
-        } else {
-            System.err.println("[FAILED] Could not connect to MySQL database.");
-        }
+        System.out.println("Result: " + (ok ? "Connection successful!" : "Connection failed. Check credentials."));
     }
 }

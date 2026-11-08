@@ -6,10 +6,14 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
 
-/**
- * Singleton database connection manager for KEC Sports Evaluator.
- * Reads configuration from application.properties on the classpath,
- * falling back to environment variables or safe defaults.
+/*
+ * Database Connection Manager - KEC Sports Evaluator
+ * 
+ * Handles JDBC connection pooling / creation for MySQL.
+ * Configured to connect locally during dev, or remotely to OCI VM 2 (MySQL Host) in production.
+ *
+ * Student 1: Vaisnav K (22CSR180) - App Host
+ * Student 2: Database Admin - OCI DB Host
  */
 public class DBConnection {
 
@@ -19,12 +23,12 @@ public class DBConnection {
     private String dbPassword;
 
     private DBConnection() {
-        loadConfiguration();
+        loadConfig();
         try {
+            // Register MySQL 8 JDBC driver
             Class.forName("com.mysql.cj.jdbc.Driver");
-            System.out.println("[DBConnection] MySQL JDBC Driver registered successfully.");
         } catch (ClassNotFoundException e) {
-            System.err.println("[DBConnection] MySQL JDBC Driver not found: " + e.getMessage());
+            System.err.println("WARN: MySQL driver not found on classpath: " + e.getMessage());
         }
     }
 
@@ -35,17 +39,18 @@ public class DBConnection {
         return instance;
     }
 
-    private void loadConfiguration() {
+    // Load connection details from application.properties or environment vars (OCI VM deployment)
+    private void loadConfig() {
         Properties props = new Properties();
-        try (InputStream is = getClass().getClassLoader().getResourceAsStream("application.properties")) {
-            if (is != null) {
-                props.load(is);
-                System.out.println("[DBConnection] Loaded configuration from application.properties");
+        try (InputStream in = getClass().getClassLoader().getResourceAsStream("application.properties")) {
+            if (in != null) {
+                props.load(in);
             }
         } catch (Exception e) {
-            System.err.println("[DBConnection] Could not read application.properties: " + e.getMessage());
+            System.err.println("Notice: Could not load application.properties, using fallback defaults.");
         }
 
+        // Check environment variables first (useful for OCI VM deployment without modifying source code)
         this.dbUrl = System.getenv("KEC_DB_URL");
         if (this.dbUrl == null || this.dbUrl.trim().isEmpty()) {
             this.dbUrl = props.getProperty("db.url",
@@ -63,29 +68,21 @@ public class DBConnection {
         }
     }
 
-    /**
-     * Creates and returns a new JDBC Connection.
-     * Each caller gets a fresh connection to prevent multithreaded concurrency conflicts.
-     * Callers must close it (e.g. using try-with-resources).
-     */
+    // Return a fresh connection for concurrent worker threads
     public Connection createConnection() throws SQLException {
         return DriverManager.getConnection(dbUrl, dbUsername, dbPassword);
     }
 
-    /**
-     * Convenience static method to obtain a new connection.
-     */
+    // Quick static helper
     public static Connection getConnection() throws SQLException {
         return getInstance().createConnection();
     }
 
+    // Test ping to check if database is reachable
     public boolean testConnection() {
         try (Connection conn = createConnection()) {
-            boolean valid = conn.isValid(5);
-            System.out.println("[DBConnection] Connection test: " + (valid ? "SUCCESS" : "FAILED"));
-            return valid;
+            return conn.isValid(3);
         } catch (SQLException e) {
-            System.err.println("[DBConnection] Connection test FAILED: " + e.getMessage());
             return false;
         }
     }

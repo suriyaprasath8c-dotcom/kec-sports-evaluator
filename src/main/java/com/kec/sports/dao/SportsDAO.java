@@ -9,16 +9,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Data Access Object for KEC Sports Evaluator.
- * Implements full CRUD operations with PreparedStatement and try-with-resources.
+/*
+ * SportsDAO.java
+ * Data Access Object for handling all MySQL operations for KEC Sports Evaluator.
+ * Uses PreparedStatement to prevent SQL injection and try-with-resources for clean connection closure.
  */
 public class SportsDAO {
 
-    // =========================================================================
-    // ATHLETE OPERATIONS
-    // =========================================================================
+    // --- Athlete Registration & Management ---
 
+    // Registers a new athlete. Rollbacks if the registration ID already exists.
     public int insertAthlete(Athlete athlete) {
         String checkSql = "SELECT athlete_id FROM athletes WHERE registration_id = ?";
         String insertSql = "INSERT INTO athletes (registration_id, student_name, department, " +
@@ -27,17 +27,20 @@ public class SportsDAO {
 
         try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false);
+
+            // Duplicate registration ID check
             try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
                 checkStmt.setString(1, athlete.getRegistrationId());
                 try (ResultSet rs = checkStmt.executeQuery()) {
                     if (rs.next()) {
                         conn.rollback();
-                        System.err.println("[SportsDAO] Duplicate athlete registration ID: " + athlete.getRegistrationId());
+                        System.err.println("Warning: Athlete ID " + athlete.getRegistrationId() + " already exists.");
                         return -1;
                     }
                 }
             }
 
+            // Insert new athlete record
             try (PreparedStatement insertStmt = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
                 insertStmt.setString(1, athlete.getRegistrationId());
                 insertStmt.setString(2, athlete.getStudentName());
@@ -51,9 +54,9 @@ public class SportsDAO {
 
                 int rows = insertStmt.executeUpdate();
                 if (rows > 0) {
-                    try (ResultSet generatedKeys = insertStmt.getGeneratedKeys()) {
-                        if (generatedKeys.next()) {
-                            int newId = generatedKeys.getInt(1);
+                    try (ResultSet keys = insertStmt.getGeneratedKeys()) {
+                        if (keys.next()) {
+                            int newId = keys.getInt(1);
                             athlete.setAthleteId(newId);
                             conn.commit();
                             return newId;
@@ -66,7 +69,7 @@ public class SportsDAO {
                 throw e;
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] insertAthlete error: " + e.getMessage());
+            System.err.println("Error inserting athlete: " + e.getMessage());
         }
         return -1;
     }
@@ -88,7 +91,7 @@ public class SportsDAO {
             stmt.setInt(9, athlete.getAthleteId());
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] updateAthlete error: " + e.getMessage());
+            System.err.println("Error updating athlete: " + e.getMessage());
             return false;
         }
     }
@@ -104,7 +107,7 @@ public class SportsDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] getAthleteById error: " + e.getMessage());
+            System.err.println("Error fetching athlete by ID: " + e.getMessage());
         }
         return null;
     }
@@ -120,7 +123,7 @@ public class SportsDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] getAthleteByRegistrationId error: " + e.getMessage());
+            System.err.println("Error fetching athlete by Reg ID: " + e.getMessage());
         }
         return null;
     }
@@ -135,7 +138,7 @@ public class SportsDAO {
                 list.add(mapAthlete(rs));
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] getAllAthletes error: " + e.getMessage());
+            System.err.println("Error listing athletes: " + e.getMessage());
         }
         return list;
     }
@@ -152,7 +155,7 @@ public class SportsDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] getAthletesByCategory error: " + e.getMessage());
+            System.err.println("Error filtering athletes by category: " + e.getMessage());
         }
         return list;
     }
@@ -169,22 +172,7 @@ public class SportsDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] getAthletesByDepartment error: " + e.getMessage());
-        }
-        return list;
-    }
-
-    public List<Athlete> getEligibleAthletes() {
-        List<Athlete> list = new ArrayList<>();
-        String sql = "SELECT * FROM athletes WHERE eligibility_status = 'ELIGIBLE' ORDER BY athlete_id ASC";
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                list.add(mapAthlete(rs));
-            }
-        } catch (SQLException e) {
-            System.err.println("[SportsDAO] getEligibleAthletes error: " + e.getMessage());
+            System.err.println("Error filtering athletes by dept: " + e.getMessage());
         }
         return list;
     }
@@ -197,11 +185,12 @@ public class SportsDAO {
             stmt.setInt(2, athleteId);
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] updateEligibilityStatus error: " + e.getMessage());
+            System.err.println("Error updating eligibility: " + e.getMessage());
             return false;
         }
     }
 
+    // Auto-calculates the next sequential number for KEC-SPT-{year}-{seq} format
     public int getNextSequenceNumber(int year) {
         String sql = "SELECT registration_id FROM athletes WHERE registration_id LIKE ? ORDER BY athlete_id DESC LIMIT 1";
         try (Connection conn = DBConnection.getConnection();
@@ -217,7 +206,7 @@ public class SportsDAO {
                 }
             }
         } catch (Exception e) {
-            System.err.println("[SportsDAO] getNextSequenceNumber error: " + e.getMessage());
+            // Default to 1 if no records found
         }
         return 1;
     }
@@ -234,9 +223,7 @@ public class SportsDAO {
         return getCount("SELECT COUNT(*) FROM athletes WHERE eligibility_status = 'INELIGIBLE'");
     }
 
-    // =========================================================================
-    // FITNESS LOG OPERATIONS
-    // =========================================================================
+    // --- Phase 1: Fitness & Endurance Logs ---
 
     public int insertFitnessLog(FitnessLog log) {
         String sql = "INSERT INTO fitness_logs (athlete_id, fitness_score, endurance_score, recorded_date) " +
@@ -259,7 +246,7 @@ public class SportsDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] insertFitnessLog error: " + e.getMessage());
+            System.err.println("Error saving fitness log: " + e.getMessage());
         }
         return -1;
     }
@@ -275,7 +262,7 @@ public class SportsDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] getFitnessLogByAthleteId error: " + e.getMessage());
+            System.err.println("Error fetching fitness log: " + e.getMessage());
         }
         return null;
     }
@@ -290,14 +277,12 @@ public class SportsDAO {
                 list.add(mapFitnessLog(rs));
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] getAllFitnessLogs error: " + e.getMessage());
+            System.err.println("Error listing fitness logs: " + e.getMessage());
         }
         return list;
     }
 
-    // =========================================================================
-    // TOURNAMENT SCORE OPERATIONS
-    // =========================================================================
+    // --- Phase 2: Tournament Scores ---
 
     public int insertTournamentScore(TournamentScore score) {
         String sql = "INSERT INTO tournament_scores (athlete_id, tournament_name, tournament_level, " +
@@ -322,7 +307,7 @@ public class SportsDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] insertTournamentScore error: " + e.getMessage());
+            System.err.println("Error saving tournament score: " + e.getMessage());
         }
         return -1;
     }
@@ -338,7 +323,7 @@ public class SportsDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] getTournamentScoreByAthleteId error: " + e.getMessage());
+            System.err.println("Error fetching tournament score: " + e.getMessage());
         }
         return null;
     }
@@ -355,7 +340,7 @@ public class SportsDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] getAllTournamentScoresByAthleteId error: " + e.getMessage());
+            System.err.println("Error listing tournament scores for athlete: " + e.getMessage());
         }
         return list;
     }
@@ -370,14 +355,12 @@ public class SportsDAO {
                 list.add(mapTournamentScore(rs));
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] getAllTournamentScores error: " + e.getMessage());
+            System.err.println("Error listing all tournament scores: " + e.getMessage());
         }
         return list;
     }
 
-    // =========================================================================
-    // TRIAL LOG OPERATIONS
-    // =========================================================================
+    // --- Phase 3: Track & Field Trial Timings ---
 
     public int insertTrialLog(TrialLog log) {
         String sql = "INSERT INTO trial_logs (athlete_id, event_name, trial_timing, " +
@@ -402,7 +385,7 @@ public class SportsDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] insertTrialLog error: " + e.getMessage());
+            System.err.println("Error saving trial log: " + e.getMessage());
         }
         return -1;
     }
@@ -418,7 +401,7 @@ public class SportsDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] getTrialLogByAthleteId error: " + e.getMessage());
+            System.err.println("Error fetching trial log: " + e.getMessage());
         }
         return null;
     }
@@ -435,7 +418,7 @@ public class SportsDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] getAllTrialLogsByAthleteId error: " + e.getMessage());
+            System.err.println("Error listing trial logs: " + e.getMessage());
         }
         return list;
     }
@@ -450,48 +433,14 @@ public class SportsDAO {
                 list.add(mapTrialLog(rs));
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] getAllTrialLogs error: " + e.getMessage());
+            System.err.println("Error listing all trial logs: " + e.getMessage());
         }
         return list;
     }
 
-    public int insertTrialLogs(List<TrialLog> logs) {
-        String sql = "INSERT INTO trial_logs (athlete_id, event_name, trial_timing, " +
-                "normalized_trial_score, discipline_score, coach_remarks) VALUES (?, ?, ?, ?, ?, ?)";
-        int successCount = 0;
-        try (Connection conn = DBConnection.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                for (TrialLog log : logs) {
-                    stmt.setInt(1, log.getAthleteId());
-                    stmt.setString(2, log.getEventName());
-                    stmt.setString(3, log.getTrialTiming());
-                    stmt.setDouble(4, log.getNormalizedTrialScore());
-                    stmt.setDouble(5, log.getDisciplineScore());
-                    stmt.setString(6, log.getCoachRemarks());
-                    stmt.addBatch();
-                }
-                int[] results = stmt.executeBatch();
-                conn.commit();
-                for (int res : results) {
-                    if (res >= 0 || res == Statement.SUCCESS_NO_INFO) {
-                        successCount++;
-                    }
-                }
-            } catch (SQLException e) {
-                conn.rollback();
-                throw e;
-            }
-        } catch (SQLException e) {
-            System.err.println("[SportsDAO] insertTrialLogs batch error: " + e.getMessage());
-        }
-        return successCount;
-    }
+    // --- Scholarships & Evaluation Persistence ---
 
-    // =========================================================================
-    // SCHOLARSHIP OPERATIONS
-    // =========================================================================
-
+    // Uses ON DUPLICATE KEY UPDATE so athletes can be re-evaluated cleanly
     public boolean insertOrUpdateScholarship(Scholarship scholarship) {
         String sql = "INSERT INTO scholarships (athlete_id, fitness_score, tournament_score, " +
                 "trial_score, discipline_score, teamwork_score, spi, scholarship_type, fee_waiver, " +
@@ -518,7 +467,7 @@ public class SportsDAO {
 
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] insertOrUpdateScholarship error: " + e.getMessage());
+            System.err.println("Error saving scholarship: " + e.getMessage());
             return false;
         }
     }
@@ -536,7 +485,7 @@ public class SportsDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] getScholarshipByAthleteId error: " + e.getMessage());
+            System.err.println("Error fetching scholarship: " + e.getMessage());
         }
         return null;
     }
@@ -553,32 +502,9 @@ public class SportsDAO {
                 list.add(mapScholarship(rs));
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] getAllScholarships error: " + e.getMessage());
+            System.err.println("Error listing scholarships: " + e.getMessage());
         }
         return list;
-    }
-
-    public List<Scholarship> getScholarshipsByType(String type) {
-        List<Scholarship> list = new ArrayList<>();
-        String sql = "SELECT s.*, a.registration_id, a.student_name, a.department, a.sports_category, " +
-                "a.sports_name, a.sgpa FROM scholarships s " +
-                "JOIN athletes a ON s.athlete_id = a.athlete_id WHERE s.scholarship_type = ? ORDER BY s.spi DESC";
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, type);
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    list.add(mapScholarship(rs));
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("[SportsDAO] getScholarshipsByType error: " + e.getMessage());
-        }
-        return list;
-    }
-
-    public int getScholarshipCountByType(String type) {
-        return getCount("SELECT COUNT(*) FROM scholarships WHERE scholarship_type = '" + type + "'");
     }
 
     public double getTotalFeeWaiver() {
@@ -590,7 +516,7 @@ public class SportsDAO {
                 return rs.getDouble(1);
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] getTotalFeeWaiver error: " + e.getMessage());
+            System.err.println("Error calculating total fee waiver: " + e.getMessage());
         }
         return 0.0;
     }
@@ -610,14 +536,12 @@ public class SportsDAO {
                 map.put(rs.getString("scholarship_type"), rs.getInt("cnt"));
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] getScholarshipSummary error: " + e.getMessage());
+            System.err.println("Error getting scholarship summary: " + e.getMessage());
         }
         return map;
     }
 
-    // =========================================================================
-    // USER AUTHENTICATION OPERATIONS
-    // =========================================================================
+    // --- Authentication ---
 
     public User authenticateUser(String username, String password) {
         String sql = "SELECT * FROM users WHERE username = ? AND password_hash = SHA2(?, 256)";
@@ -631,30 +555,12 @@ public class SportsDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] authenticateUser error: " + e.getMessage());
+            System.err.println("Error during login authentication: " + e.getMessage());
         }
         return null;
     }
 
-    public User getUserByUsername(String username) {
-        String sql = "SELECT * FROM users WHERE username = ?";
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, username);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return mapUser(rs);
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("[SportsDAO] getUserByUsername error: " + e.getMessage());
-        }
-        return null;
-    }
-
-    // =========================================================================
-    // HELPER MAPPERS
-    // =========================================================================
+    // --- Row Mappers ---
 
     private Athlete mapAthlete(ResultSet rs) throws SQLException {
         Athlete a = new Athlete();
@@ -734,7 +640,7 @@ public class SportsDAO {
             s.setSportsName(rs.getString("sports_name"));
             s.setSgpa(rs.getDouble("sgpa"));
         } catch (SQLException ignored) {
-            // Joined columns might not exist if simple SELECT * was used
+            // Joined columns might not be present in raw SELECT *
         }
         return s;
     }
@@ -758,7 +664,7 @@ public class SportsDAO {
                 return rs.getInt(1);
             }
         } catch (SQLException e) {
-            System.err.println("[SportsDAO] getCount error (" + sql + "): " + e.getMessage());
+            System.err.println("Error counting rows: " + e.getMessage());
         }
         return 0;
     }

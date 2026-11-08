@@ -7,9 +7,11 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.concurrent.Callable;
 
-/**
- * Callable task for evaluating an athlete's athletic performance and scholarship tier.
- * Runs in parallel within a thread pool and displays thread execution logs.
+/*
+ * EvaluationTask.java
+ * Callable task executed concurrently by worker threads in the EvaluationEngine.
+ * Computes the Sports Performance Index (SPI), checks category minimum thresholds,
+ * verifies academic eligibility (SGPA >= 6.0), and assigns scholarship fee waivers.
  */
 public class EvaluationTask implements Callable<Scholarship> {
 
@@ -35,14 +37,13 @@ public class EvaluationTask implements Callable<Scholarship> {
         String regId = athlete.getRegistrationId();
         String category = athlete.getSportsCategory();
 
-        System.out.println("[" + threadName + "] Evaluating " + category + " for Athlete " + regId + " (" + athlete.getStudentName() + ")");
+        System.out.printf("[%s] Evaluating %s (%s)...%n", threadName, athlete.getStudentName(), category);
 
-        // Step 1: Check Academic Eligibility (SGPA >= 6.0)
+        // Academic filter: KEC / Anna University rule requires minimum 6.0 SGPA
         double sgpa = athlete.getSgpa();
-        boolean isAcademicallyEligible = (sgpa >= 6.0);
+        boolean isEligible = (sgpa >= 6.0);
 
-        // Update eligibility status in athlete table if changed
-        String currentStatus = isAcademicallyEligible ? "ELIGIBLE" : "INELIGIBLE";
+        String currentStatus = isEligible ? "ELIGIBLE" : "INELIGIBLE";
         if (!currentStatus.equals(athlete.getEligibilityStatus())) {
             athlete.setEligibilityStatus(currentStatus);
             if (dao != null) {
@@ -50,95 +51,93 @@ public class EvaluationTask implements Callable<Scholarship> {
             }
         }
 
-        // Component scores
-        double fitScore = (fitnessLog != null) ? fitnessLog.getFitnessScore() : 0.0;
-        double tournScore = (tournamentScore != null) ? tournamentScore.getTournamentPoints() : 0.0;
-        double teamScore = (tournamentScore != null) ? tournamentScore.getTeamworkScore() : 0.0;
-        double trScore = (trialLog != null) ? trialLog.getNormalizedTrialScore() : 0.0;
-        double discScore = (trialLog != null && trialLog.getDisciplineScore() > 0)
-                ? trialLog.getDisciplineScore() : 85.0; // Institutional baseline discipline score
+        // Pull component scores from respective phase logs
+        double fitness = (fitnessLog != null) ? fitnessLog.getFitnessScore() : 0.0;
+        double tournament = (tournamentScore != null) ? tournamentScore.getTournamentPoints() : 0.0;
+        double teamwork = (tournamentScore != null) ? tournamentScore.getTeamworkScore() : 0.0;
+        double trialScore = (trialLog != null) ? trialLog.getNormalizedTrialScore() : 0.0;
+        double discipline = (trialLog != null && trialLog.getDisciplineScore() > 0)
+                ? trialLog.getDisciplineScore() : 85.0; // Institutional default rating
 
         double rawSpi = 0.0;
-        boolean thresholdMet = true;
-        String thresholdFailureReason = "";
+        boolean thresholdPassed = true;
+        String thresholdNote = "";
 
-        // Step 2: Category-Specific SPI Calculation & Minimum Thresholds
+        // Category-wise formula calculations and minimum thresholds
         if ("INDIVIDUAL_SPORTS".equalsIgnoreCase(category)) {
-            // SPI = (Fitness × 0.30) + (Tournaments × 0.50) + (Discipline × 0.20)
-            // Tournament Minimum Threshold = 40%
-            rawSpi = (fitScore * 0.30) + (tournScore * 0.50) + (discScore * 0.20);
-            if (tournScore < 40.0) {
-                thresholdMet = false;
-                thresholdFailureReason = "Tournament score (" + tournScore + ") below minimum threshold of 40%.";
+            // Formula: 30% Fitness + 50% Tournaments + 20% Discipline
+            // Threshold: Tournament minimum 40%
+            rawSpi = (fitness * 0.30) + (tournament * 0.50) + (discipline * 0.20);
+            if (tournament < 40.0) {
+                thresholdPassed = false;
+                thresholdNote = "Tournament score (" + tournament + ") is below the 40% minimum threshold.";
             }
         } else if ("TEAM_SPORTS".equalsIgnoreCase(category)) {
-            // SPI = (Fitness × 0.40) + (Tournaments × 0.40) + (Teamwork Score × 0.20)
-            // Fitness Minimum Threshold = 50%
-            rawSpi = (fitScore * 0.40) + (tournScore * 0.40) + (teamScore * 0.20);
-            if (fitScore < 50.0) {
-                thresholdMet = false;
-                thresholdFailureReason = "Fitness score (" + fitScore + ") below minimum threshold of 50%.";
+            // Formula: 40% Fitness + 40% Tournaments + 20% Teamwork
+            // Threshold: Fitness minimum 50%
+            rawSpi = (fitness * 0.40) + (tournament * 0.40) + (teamwork * 0.20);
+            if (fitness < 50.0) {
+                thresholdPassed = false;
+                thresholdNote = "Fitness score (" + fitness + ") is below the 50% minimum threshold.";
             }
         } else if ("TRACK_AND_FIELD".equalsIgnoreCase(category)) {
-            // SPI = (Fitness × 0.50) + (Timed Trials × 0.40) + (Discipline × 0.10)
-            // Trial Minimum Threshold = 50%
-            rawSpi = (fitScore * 0.50) + (trScore * 0.40) + (discScore * 0.10);
-            if (trScore < 50.0) {
-                thresholdMet = false;
-                thresholdFailureReason = "Trial score (" + trScore + ") below minimum threshold of 50%.";
+            // Formula: 50% Fitness + 40% Timed Trials + 10% Discipline
+            // Threshold: Trial minimum 50%
+            rawSpi = (fitness * 0.50) + (trialScore * 0.40) + (discipline * 0.10);
+            if (trialScore < 50.0) {
+                thresholdPassed = false;
+                thresholdNote = "Trial score (" + trialScore + ") is below the 50% minimum threshold.";
             }
         } else {
-            // Default weighted average
-            rawSpi = (fitScore * 0.40) + (tournScore * 0.40) + (discScore * 0.20);
+            rawSpi = (fitness * 0.40) + (tournament * 0.40) + (discipline * 0.20);
         }
 
-        // Round SPI to 2 decimal places using BigDecimal
-        BigDecimal bdSpi = BigDecimal.valueOf(rawSpi).setScale(2, RoundingMode.HALF_UP);
-        double finalSpi = bdSpi.doubleValue();
+        // Round SPI to 2 decimal places
+        BigDecimal bd = BigDecimal.valueOf(rawSpi).setScale(2, RoundingMode.HALF_UP);
+        double finalSpi = bd.doubleValue();
 
-        // Step 3: Determine Scholarship Tier & Fee Waiver
-        String scholarshipType = "NO_AWARD";
+        // Determine scholarship tier and fee waiver
+        String awardTier = "NO_AWARD";
         double feeWaiver = 0.0;
-        String evaluationStatus = "EVALUATED";
+        String evalStatus = "EVALUATED";
         String remarks;
 
-        if (!isAcademicallyEligible) {
-            scholarshipType = "NO_AWARD";
+        if (!isEligible) {
+            awardTier = "NO_AWARD";
             feeWaiver = 0.0;
-            evaluationStatus = "INELIGIBLE";
-            remarks = "INELIGIBLE: Academic SGPA is " + sgpa + " (< 6.0 minimum required). Scholarship revoked.";
-        } else if (!thresholdMet) {
-            scholarshipType = "NO_AWARD";
+            evalStatus = "INELIGIBLE";
+            remarks = "INELIGIBLE: Academic SGPA " + sgpa + " is below 6.0 minimum requirement. Scholarship revoked.";
+        } else if (!thresholdPassed) {
+            awardTier = "NO_AWARD";
             feeWaiver = 0.0;
-            remarks = "NO AWARD: Category minimum threshold not met. " + thresholdFailureReason;
+            remarks = "NO AWARD: Did not meet category threshold. " + thresholdNote;
         } else {
-            // Threshold met & academically eligible
+            // Check scholarship tiers based on institutional policy
             if (finalSpi >= 90.0) {
-                scholarshipType = "GOLD";
+                awardTier = "GOLD";
                 feeWaiver = 100.0;
-                remarks = "GOLD SCHOLARSHIP: Outstanding sports performance (" + finalSpi + "%). 100% Fee Waiver awarded.";
+                remarks = "GOLD SCHOLARSHIP: Outstanding athletic performance (" + finalSpi + "%). 100% Fee Waiver.";
             } else if (finalSpi >= 75.0) {
-                scholarshipType = "SILVER";
+                awardTier = "SILVER";
                 feeWaiver = 50.0;
-                remarks = "SILVER SCHOLARSHIP: Excellent sports performance (" + finalSpi + "%). 50% Fee Waiver awarded.";
+                remarks = "SILVER SCHOLARSHIP: Excellent performance (" + finalSpi + "%). 50% Fee Waiver.";
             } else if (finalSpi >= 60.0) {
-                scholarshipType = "BRONZE";
+                awardTier = "BRONZE";
                 feeWaiver = 25.0;
-                remarks = "BRONZE SCHOLARSHIP: Commendable sports performance (" + finalSpi + "%). 25% Fee Waiver awarded.";
+                remarks = "BRONZE SCHOLARSHIP: Commendable performance (" + finalSpi + "%). 25% Fee Waiver.";
             } else {
-                scholarshipType = "NO_AWARD";
+                awardTier = "NO_AWARD";
                 feeWaiver = 0.0;
-                remarks = "NO AWARD: SPI (" + finalSpi + "%) is below the minimum 60% requirement for scholarships.";
+                remarks = "NO AWARD: SPI score (" + finalSpi + "%) is below the 60% requirement.";
             }
         }
 
         Scholarship scholarship = new Scholarship(
-                athlete.getAthleteId(), fitScore, tournScore, trScore,
-                discScore, teamScore, finalSpi, scholarshipType,
-                feeWaiver, evaluationStatus, remarks
+                athlete.getAthleteId(), fitness, tournament, trialScore,
+                discipline, teamwork, finalSpi, awardTier,
+                feeWaiver, evalStatus, remarks
         );
 
-        // Populate joined metadata
         scholarship.setRegistrationId(regId);
         scholarship.setStudentName(athlete.getStudentName());
         scholarship.setDepartment(athlete.getDepartment());
@@ -146,12 +145,13 @@ public class EvaluationTask implements Callable<Scholarship> {
         scholarship.setSportsName(athlete.getSportsName());
         scholarship.setSgpa(sgpa);
 
-        // Save to Database
+        // Update database record
         if (dao != null) {
             dao.insertOrUpdateScholarship(scholarship);
         }
 
-        System.out.println("[" + threadName + "] COMPLETED " + regId + " -> SPI: " + finalSpi + "% | Award: " + scholarshipType + " | Waiver: " + feeWaiver + "%");
+        System.out.printf("[%s] Done %s -> SPI: %.2f%% | Award: %s (%.0f%% waiver)%n",
+                threadName, regId, finalSpi, awardTier, feeWaiver);
 
         return scholarship;
     }
