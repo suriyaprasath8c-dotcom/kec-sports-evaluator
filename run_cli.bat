@@ -17,7 +17,7 @@ if %ERRORLEVEL% EQU 0 (
     goto end
 )
 
-echo [WARNING] Maven not found in PATH. Checking Java compiler...
+echo [WARNING] Maven not found in PATH. Using local Java runtime...
 where javac >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Neither Maven nor javac found in system PATH.
@@ -28,7 +28,7 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo [INFO] Compiling Java classes directly...
 if not exist "bin" mkdir bin
-javac -encoding UTF-8 -d bin src\main\java\com\kec\sports\model\*.java src\main\java\com\kec\sports\util\*.java src\main\java\com\kec\sports\dao\*.java src\main\java\com\kec\sports\export\*.java src\main\java\com\kec\sports\evaluation\*.java src\main\java\com\kec\sports\*.java
+javac -encoding UTF-8 -cp "lib\*" -d bin src\main\java\com\kec\sports\model\*.java src\main\java\com\kec\sports\util\*.java src\main\java\com\kec\sports\dao\*.java src\main\java\com\kec\sports\export\*.java src\main\java\com\kec\sports\evaluation\*.java src\main\java\com\kec\sports\*.java
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Compilation failed.
@@ -36,9 +36,9 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
-echo [2/2] Starting application...
+echo [2/2] Starting application with MySQL driver...
 echo.
-java -cp "bin;src\main\resources" com.kec.sports.MainApp
+java -cp "bin;lib\*;src\main\resources" com.kec.sports.MainApp
 
 :end
 echo.
